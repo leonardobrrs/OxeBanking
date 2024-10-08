@@ -6,7 +6,7 @@ Reposit√≥rio para o Projeto da disciplina de Conceitos de Linguagem de Programa√
 Participantes	                       |Links para os Perfis
 -----------------------------------  |  ------------------                                   
 Leonardo Barbosa Barros              |https://github.com/leonardobrrs
-Fernanda     |
+Fernanda Correia    |https://github.com/fecmm
 
 ## SOBRE O PROJETO
 
