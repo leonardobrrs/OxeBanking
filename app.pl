@@ -1,78 +1,47 @@
 use Mojolicious::Lite;
-use DBI;
-use JSON;
+use lib 'lib';  
+use DB;
+use Conta;
 
 # Conectar ao banco de dados
 helper db => sub {
-    my $self = shift;
-    return DBI->connect("dbi:SQLite:dbname=oxe_banking.db","","",{ RaiseError => 1, AutoCommit => 1 });
+    state $db = DB->new->db;
 };
 
-# Rota principal (para exibir saldo e movimentações)
+# Rota para exibir saldo e movimentações
 get '/conta/:id' => sub {
     my $c = shift;
     my $id = $c->param('id');
 
-    # Consultar dados da conta no banco de dados
-    my $sth = $c->db->prepare("SELECT nome, saldo, movimentacoes FROM contas WHERE id = ?");
-    $sth->execute($id);
-    my ($nome, $saldo, $movimentacoes) = $sth->fetchrow_array;
+    my $conta = Conta->new($c->db, $id);
+    $conta->carregar or return $c->render(text => 'Conta nao encontrada');
 
-    # Se a conta não existir
-    return $c->render(text => 'Conta não encontrada') unless $nome;
-
-    # Exibir saldo e movimentações
-    my $movimentacoes_list = decode_json($movimentacoes);
-    $c->render(json => {
-        nome => $nome,
-        saldo => $saldo,
-        movimentacoes => $movimentacoes_list,
-    });
+    my $dados = $conta->obter_dados;
+    $c->render(json => $dados);
 };
 
 # Adicionar movimentação
 post '/conta/:id/movimentacao' => sub {
     my $c = shift;
     my $id = $c->param('id');
-
-    # Parâmetros recebidos
-    my $tipo = $c->param('tipo');  # "deposito" ou "saque"
+    my $tipo = $c->param('tipo');
     my $valor = $c->param('valor');
 
-    # Consultar a conta no banco de dados
-    my $sth = $c->db->prepare("SELECT saldo, movimentacoes FROM contas WHERE id = ?");
-    $sth->execute($id);
-    my ($saldo_atual, $movimentacoes) = $sth->fetchrow_array;
+    my $conta = Conta->new($c->db, $id);
+    $conta->carregar or return $c->render(text => 'Conta nao encontrada');
 
-    # Se a conta não existir
-    return $c->render(text => 'Conta não encontrada') unless $saldo_atual;
-
-    # Calcular o novo saldo
-    if ($tipo eq 'deposito') {
-        $saldo_atual += $valor;
-    } elsif ($tipo eq 'saque') {
-        return $c->render(text => 'Saldo insuficiente') if $saldo_atual < $valor;
-        $saldo_atual -= $valor;
-    } else {
-        return $c->render(text => 'Tipo de movimentação inválido');
-    }
-
-    # Atualizar as movimentações
-    my $nova_movimentacao = {
-        tipo => $tipo,
-        valor => $valor,
-        data => scalar localtime,
-    };
-    my $lista_movimentacoes = decode_json($movimentacoes);
-    push @$lista_movimentacoes, $nova_movimentacao;
-    my $movimentacoes_atualizadas = encode_json($lista_movimentacoes);
-
-    # Atualizar a conta no banco de dados
-    $sth = $c->db->prepare("UPDATE contas SET saldo = ?, movimentacoes = ? WHERE id = ?");
-    $sth->execute($saldo_atual, $movimentacoes_atualizadas, $id);
-
-    $c->render(json => { mensagem => 'Movimentação registrada com sucesso', saldo_atual => $saldo_atual });
+    my $mensagem = $conta->adicionar_movimentacao($tipo, $valor);
+    $c->render(json => { mensagem => $mensagem });
 };
 
+# Rota para abrir uma nova conta
+post '/conta/abrir' => sub {
+    my $c = shift;
+    my $nome = $c->param('nome');
+    my $tipo = $c->param('tipo');  # "corrente" ou "poupanca"
+    
+    Conta->criar($c->db, $nome, $tipo);
+    $c->render(json => { mensagem => 'Conta criada com sucesso' });
+};
 
 app->start;
