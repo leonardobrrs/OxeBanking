@@ -14,5 +14,6 @@ O objetivo deste projeto é desenvolver um internet banking. Esta equipe em ques
 
 ## FEATURES ATUALIZADAS
 
-* **Exibir Saldo/Movimentações:**
-* **Saque/Depósito:**
+* **Exibir Saldo/Movimentações: 08/10**
+* **Saque/Depósito: 08/10**
+* **Abrir Conta Corrente/Poupança: 15/10**
