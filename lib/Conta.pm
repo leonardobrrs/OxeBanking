@@ -26,11 +26,20 @@ sub carregar {
     $self->{movimentacoes} = decode_json($movimentacoes);
 }
 
-# Criar uma nova conta (corrente ou poupança)
+# Criar uma nova conta (corrente ou poupança) e retornar os dados do novo usuário
 sub criar {
-    my ($class, $db, $nome, $tipo) = @_;
-    my $sth = $db->prepare("INSERT INTO contas (nome, tipo, saldo, movimentacoes) VALUES (?, ?, ?, ?)");
-    $sth->execute($nome, $tipo, 0, '[]');
+    my ($class, $db, $nome, $tipo, $email, $senha) = @_;
+    my $sth = $db->prepare("INSERT INTO contas (nome, tipo, email, senha, saldo, movimentacoes) VALUES (?, ?, ?, ?, ?, ?) RETURNING id, nome, email, saldo");
+    $sth->execute($nome, $tipo, $email, $senha, 0, '[]');
+    
+    # Retornar os dados da conta recém-criada
+    my ($id, $nome_criado, $email_criado, $saldo_inicial) = $sth->fetchrow_array;
+    return {
+        id => $id,
+        nome => $nome_criado,
+        email => $email_criado,
+        saldo => $saldo_inicial,
+    };
 }
 
 # Adicionar uma movimentação (deposito ou saque)
@@ -59,7 +68,7 @@ sub adicionar_movimentacao {
     my $sth = $self->{db}->prepare("UPDATE contas SET saldo = ?, movimentacoes = ? WHERE id = ?");
     $sth->execute($saldo_atual, encode_json($self->{movimentacoes}), $self->{id});
     
-    return 'Movimentacao registrada com sucesso';
+    return 'Movimentacao registrada com sucesso', $saldo_atual;
 }
 
 # Retornar saldo e movimentações
@@ -70,6 +79,12 @@ sub obter_dados {
         saldo => $self->{saldo},
         movimentacoes => $self->{movimentacoes},
     };
+}
+
+# Validação de senha
+sub validar_senha {
+    my ($class, $senha) = @_;
+    return length($senha) >= 8 && $senha =~ /\d/ && $senha =~ /\W/;
 }
 
 1;
