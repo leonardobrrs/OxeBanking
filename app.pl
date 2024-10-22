@@ -43,8 +43,17 @@ post '/conta/abrir' => sub {
     my $email = $c->param('email');
     my $senha = $c->param('senha');
 
+    unless (validar_senha($senha)) {
+        return $c->render(json => { mensagem => 'Senha inválida' }, status => 400);
+    }
+
     Conta->criar($c->db, $nome, $tipo, $email, $senha);
     $c->render(json => { mensagem => 'Conta criada com sucesso' });
 };
+
+sub validar_senha {
+    my $senha = shift;
+    return length($senha) >= 8 && $senha =~ /\d/ && $senha =~ /\W/;
+}
 
 app->start;
