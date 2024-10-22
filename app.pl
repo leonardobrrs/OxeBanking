@@ -40,7 +40,10 @@ post '/conta/abrir' => sub {
     my $nome = $c->param('nome');
     my $tipo = $c->param('tipo');  # "corrente" ou "poupanca"
     
-    Conta->criar($c->db, $nome, $tipo);
+    my $email = $c->param('email');
+    my $senha = $c->param('senha');
+
+    Conta->criar($c->db, $nome, $tipo, $email, $senha);
     $c->render(json => { mensagem => 'Conta criada com sucesso' });
 };
 
