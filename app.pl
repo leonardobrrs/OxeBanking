@@ -54,7 +54,8 @@ post '/conta/abrir' => sub {
     my $c = shift;
     my $nome = $c->param('nome');
     my $tipo = $c->param('tipo');  # "corrente" ou "poupanca"
-    
+    my $cliente_tipo = $c->param('cliente_tipo'); # pj ou pf
+
     my $email = $c->param('email');
     my $senha = $c->param('senha');
 
@@ -63,7 +64,7 @@ post '/conta/abrir' => sub {
         return $c->render(json => { mensagem => 'Senha invalida' }, status => 400);
     }
 
-    my $dados_novo_usuario = Conta->criar($c->db, $nome, $tipo, $email, $senha);
+    my $dados_novo_usuario = Conta->criar($c->db, $nome, $tipo, $cliente_tipo, $email, $senha);
     $c->render(json => {
         mensagem => 'Conta criada com sucesso',
         dados => $dados_novo_usuario
